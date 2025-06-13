@@ -73,7 +73,7 @@ void Error_Handler(void);
 #define DW_NSS_GPIO_Port GPIOD
 
 /* USER CODE BEGIN Private defines */
-// Definiram ih ovdje, ali ne koriste se valjda
+// Definiram ih ovdje, ali ne koriste se zasad
 #define DW_IRQ2_Pin GPIO_PIN_9
 #define DW_IRQ2_GPIO_Port GPIOE
 #define DW_NSS1_WAKEUP_Pin GPIO_PIN_15

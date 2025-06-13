@@ -18,16 +18,14 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "cmsis_os.h"
 #include "spi.h"
 #include "usart.h"
 #include "gpio.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include "examples_defines.h"
-#include <port.h>
-#include <stdio.h>
-#include <ctype.h>
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -49,40 +47,18 @@
 
 /* USER CODE BEGIN PV */
 
-// Ove treba imati
-SPI_HandleTypeDef   *hcurrent_active_spi = &hspi1;/*clocked from 72MHz*/ //SPI Handle
-uint16_t            pin_io_active_spi = DW_NSS_Pin; // DW_NSS_Pin
-GPIO_PinState       SPI_CS_state = GPIO_PIN_RESET; //Determine the CS for the IO
-host_using_spi_e    host_spi = SPI_1;
-SPI_HandleTypeDef   hspi4;
-extern example_ptr example_pointer;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
+void MX_FREERTOS_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-void test_run_info(unsigned char *data)
-{
-    for (size_t i = 0; i < strlen((const char *)data); i++) {
-        if (isalnum(data[i]) || isgraph(data[i])) {
-            printf("%c", data[i]);
-        } else {
-            printf(".");
-        }
-    }
-    printf("\r");
-    fflush(stdout);
-    /*
-    for (size_t i = 0; i < strlen((const char *)data); i++) {
-		printf("0x%02X ", data[i]);
-	}
-    printf("\n\r");*/
-}
+
 /* USER CODE END 0 */
 
 /**
@@ -117,9 +93,19 @@ int main(void)
   MX_SPI1_Init();
   MX_USART3_UART_Init();
   /* USER CODE BEGIN 2 */
-  build_examples();
-  example_pointer();
+
   /* USER CODE END 2 */
+
+  /* Init scheduler */
+  osKernelInitialize();
+
+  /* Call init function for freertos objects (in cmsis_os2.c) */
+  MX_FREERTOS_Init();
+
+  /* Start scheduler */
+  osKernelStart();
+
+  /* We should never get here as control is now taken by the scheduler */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
@@ -180,6 +166,28 @@ void SystemClock_Config(void)
 /* USER CODE BEGIN 4 */
 
 /* USER CODE END 4 */
+
+/**
+  * @brief  Period elapsed callback in non blocking mode
+  * @note   This function is called  when TIM1 interrupt took place, inside
+  * HAL_TIM_IRQHandler(). It makes a direct call to HAL_IncTick() to increment
+  * a global variable "uwTick" used as application time base.
+  * @param  htim : TIM handle
+  * @retval None
+  */
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
+{
+  /* USER CODE BEGIN Callback 0 */
+
+  /* USER CODE END Callback 0 */
+  if (htim->Instance == TIM1)
+  {
+    HAL_IncTick();
+  }
+  /* USER CODE BEGIN Callback 1 */
+
+  /* USER CODE END Callback 1 */
+}
 
 /**
   * @brief  This function is executed in case of error occurrence.

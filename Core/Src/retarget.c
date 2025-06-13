@@ -2,7 +2,7 @@
  * retarget.c
  *
  *  Created on: Apr 21, 2025
- *      Author: Korisnik
+ *      Author: Marko Srpak
  */
 #include "usart.h"
 #include <stdio.h>
@@ -35,8 +35,6 @@ int _write( int file, char *ptr, int len ){
 
 PUTCHAR_PROTOTYPE
 {
-	/* Place your implementation of fputc here */
-	/* e.g. write a character to the EVAL_COM1 and Loop until the end of transmission */
 	HAL_UART_Transmit(&huart3, (uint8_t *)&ch, 1, 0xFFFF);
 	return ch;
 }
