@@ -36,11 +36,12 @@ void test_run_info(unsigned char *data)
             printf(".");
         }
     }
-    printf("\n\r");
-    for (size_t i = 0; i < strlen((const char *)data); i++) {
+    printf("\r");
+    fflush(stdout);
+   /* for (size_t i = 0; i < strlen((const char *)data); i++) {
 		printf("0x%02X ", data[i]);
 	}
-    printf("\n\r");
+    printf("\n\r");*/
 }
 
 void example_app_task(void *parameters)
