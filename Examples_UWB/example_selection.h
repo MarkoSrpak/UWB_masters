@@ -32,7 +32,7 @@ extern "C"
 //#define TEST_SIMPLE_RX
 //#define TEST_SIMPLE_RX_NLOS
 //#define TEST_RX_DIAG
-//#define TEST_RX_SNIFF
+#define TEST_RX_SNIFF
 //#define TEST_DOUBLE_BUFFER_RX
 //#define TEST_RX_TRIM
 //#define TEST_SIMPLE_RX_PDOA
@@ -61,7 +61,7 @@ extern "C"
 //#define TEST_DS_TWR_STS_SDC_INITIATOR
 //#define TEST_DS_TWR_STS_SDC_RESPONDER
 
-#define TEST_SS_TWR_INITIATOR
+//#define TEST_SS_TWR_INITIATOR
 //#define TEST_SS_TWR_RESPONDER
 
 //#define TEST_SS_TWR_INITIATOR_STS

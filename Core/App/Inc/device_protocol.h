@@ -52,16 +52,31 @@ typedef struct {
 
 // Struct to represent a UWB (Ultra-Wideband) device
 typedef struct {
-    uint8_t device_id;          // Unique device identifier
-    device_type_e device_type; 	// Type of the device: ANCHOR or TAG
-    bool is_serial;             // Indicates if the device communicates over serial
-    bool is_initialized;        // Indicates if the device has been initialized
-    dwt_config_t config;		// DW1000/3000 configuration structure (e.g., channel, data rate, PRF, etc.)
-    uint16_t tx_ant_dly;		// Transmit antenna delay (used for precise timestamp corrections)
-    uint16_t rx_ant_dly;		// Receive antenna delay (used for precise timestamp corrections)
-    coord_t coord;              // 3D coordinates of the device
+    uint32_t partID;                // Unique 32-bit Part ID from the UWB IC (chip-specific hardware ID)
+    uint64_t lotID;                 // Unique 64-bit Lot ID from the UWB IC (identifies manufacturing lot/batch)
+    uint32_t deviceHash;            // Deterministic hash generated from partID and lotID to identify the device in code
+
+    uint16_t panID;                 // Personal Area Network ID used for logical grouping of UWB devices (optional if no filtering)
+    uint16_t address16;             // 16-bit short address used in the UWB protocol stack (optional if no filtering)
+
+    uint16_t device_id;             // Logical ID
+    device_type_e device_type;      // Device role
+
+    bool is_serial;                 // True if device communicates over a serial interface (e.g., UART/USB), false for pure RF nodes
+    bool is_initialized;            // Tracks whether the device has completed all initialization/configuration steps
+
+    dwt_config_t config;            // DW3xxx chip configuration (channel, PRF, data rate, preamble length, etc.)
+
+    uint16_t tx_ant_dly;            // Calibrated transmit antenna delay, used for accurate timestamp calculations
+    uint16_t rx_ant_dly;            // Calibrated receive antenna delay, used for accurate timestamp calculations
+
+    coord_t coord;                  // 3D spatial coordinates (x, y, z) of the device, typically used for anchors
 } uwb_device_t;
+
+
 /*--------------------------- EXTERN -----------------------------------------*/
 /*--------------------------- GLOBAL FUNCTION PROTOTYPES ---------------------*/
+uwb_result_e uwb_device_init(uwb_device_t *uwb_device);
+uwb_result_e uwb_send_payload(uwb_device_t *uwb_device, uint16_t target_device_address, uint8_t* data, uint32_t data_size);
 
 #endif /* APP_INC_DEVICE_PROTOCOL_H_ */

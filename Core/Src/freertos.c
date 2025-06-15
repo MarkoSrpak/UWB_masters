@@ -36,8 +36,8 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-#define EXAMPLE_APP
-// #define MAIN_APP
+ //#define EXAMPLE_APP
+#define MAIN_APP
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -97,9 +97,9 @@ void MX_FREERTOS_Init(void) {
   defaultTaskHandle = osThreadNew(StartDefaultTask, NULL, &defaultTask_attributes);
 
   /* USER CODE BEGIN RTOS_THREADS */
-#ifdef EXAMPLE_APP
+#if defined(EXAMPLE_APP)
   xTaskCreate(example_app_task, "ExampleAppTask", 512, NULL, 1, NULL);
-#elif MAIN_APP
+#elif defined(MAIN_APP)
   xTaskCreate(main_app_task, "MainAppTask", 512, NULL, 1, NULL);
 #endif
   /* USER CODE END RTOS_THREADS */

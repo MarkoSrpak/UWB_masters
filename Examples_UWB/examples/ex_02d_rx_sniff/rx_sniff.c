@@ -132,6 +132,7 @@ int rx_sniff(void)
             if (frame_len <= FRAME_LEN_MAX)
             {
                 dwt_readrxdata(rx_buffer, frame_len, 0);
+                test_run_info(rx_buffer);
             }
         }
         else
