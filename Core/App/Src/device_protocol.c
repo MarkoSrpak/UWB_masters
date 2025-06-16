@@ -49,7 +49,7 @@ static const uwb_device_t deviceTable[]={
 		.lotID=0,
 		.deviceHash=0x1FC5135C,
 		.panID=0xABCD,
-		.address16=0x1234,
+		.address16=0x0001,
 		.device_id=1,
 		.device_type=ANCHOR,
 		.is_serial=true,
@@ -62,7 +62,7 @@ static const uwb_device_t deviceTable[]={
 	{
 		.partID=0,
 		.lotID=0,
-		.deviceHash=0,
+		.deviceHash=0xF059DE36,
 		.panID=0xABCD,
 		.address16=0x0002,
 		.device_id=2,
@@ -123,6 +123,10 @@ static const uwb_device_t deviceTable[]={
 };
 
 static uint8_t tx_msg[118];
+static uint8_t rx_msg[FRAME_LEN_MAX];
+/* Hold copy of status register state here for reference so that it can be examined at a debug breakpoint. */
+static uint32_t status_reg = 0;
+
 /*--------------------------- STATIC FUNCTIONS -------------------------------*/
 static uint32_t hash_fnv1a(uint8_t *data, size_t len) {
     uint32_t hash = 0x811c9dc5;
@@ -203,10 +207,11 @@ uwb_result_e uwb_device_init(uwb_device_t *uwb_device)
 	dwt_setrxantennadelay(uwb_device->rx_ant_dly);
 	dwt_settxantennadelay(uwb_device->tx_ant_dly);
 
+	// Ovo vjerojatno maknuti i na drugi nacin handelati
 	/* Set expected response's delay and timeout.
 	 * As this example only handles one incoming frame with always the same delay and timeout, those values can be set here once for all. */
-	dwt_setrxaftertxdelay(POLL_TX_TO_RESP_RX_DLY_UUS);
-	dwt_setrxtimeout(RESP_RX_TIMEOUT_UUS);
+	//dwt_setrxaftertxdelay(POLL_TX_TO_RESP_RX_DLY_UUS);
+	// dwt_setrxtimeout(RESP_RX_TIMEOUT_UUS);
 
 	/* Next can enable TX/RX states output on GPIOs 5 and 6 to help debug, and also TX/RX LEDs
 	 * Note, in real low power applications the LEDs should not be used. */
@@ -220,7 +225,7 @@ uwb_result_e uwb_device_init(uwb_device_t *uwb_device)
 
 }
 
-uwb_result_e uwb_send_payload(uwb_device_t *uwb_device, uint16_t target_device_address, uint8_t* data, uint32_t data_size)
+uwb_result_e uwb_send_payload(const uwb_device_t *uwb_device, uint16_t target_device_address, const uint8_t* data, uint32_t data_size)
 {
     if (uwb_device == NULL || data == NULL || !uwb_device->is_initialized) {
         return UWB_INVALID_PARAM;
@@ -261,4 +266,75 @@ uwb_result_e uwb_send_payload(uwb_device_t *uwb_device, uint16_t target_device_a
     dwt_starttx(DWT_START_TX_IMMEDIATE);
 
     return UWB_OK;
+}
+
+uwb_result_e uwb_receive_poll(uwb_device_t *uwb_device, uint16_t *sender_device_address, uint8_t* data, uint32_t max_data_size, uint32_t* received_size)
+{
+    if (uwb_device == NULL || data == NULL || sender_device_address == NULL || !uwb_device->is_initialized) {
+        return UWB_INVALID_PARAM;
+    }
+
+    // Enable RX mode immediately
+    dwt_rxenable(DWT_START_RX_IMMEDIATE);
+    // Wait for frame received or error/timeout
+    waitforsysstatus(&status_reg, NULL, (DWT_INT_RXFCG_BIT_MASK | SYS_STATUS_ALL_RX_ERR), 0);
+
+    if (status_reg & DWT_INT_RXFCG_BIT_MASK)
+    {
+        uint16_t frame_len;
+
+        // Clear RX frame received flag
+        dwt_writesysstatuslo(DWT_INT_RXFCG_BIT_MASK);
+
+        // Read frame length and check buffer size
+        frame_len = dwt_getframelength(0);
+        if (frame_len > sizeof(rx_msg)) {
+            return UWB_MEMORY_ERROR;
+        }
+
+        // Read frame into rx_buffer
+        dwt_readrxdata(rx_msg, frame_len, 0);
+
+#if 0
+    printf("RX RAW [%u bytes]:", frame_len);
+    for (uint16_t i = 0; i < frame_len; i++) {
+        printf(" %02X", rx_msg[i]);
+    }
+    printf("\n\r");
+#endif
+
+        // Validate Frame Control bytes, should all be the same accross all msg
+        if (rx_msg[0] != tx_msg[0] || rx_msg[1] != tx_msg[1]) {
+            return UWB_WRONG_ADDRESS;
+        }
+
+        // Validate PAN ID (bytes 3–4)
+        uint16_t received_panID;
+        memcpy(&received_panID, &rx_msg[3], sizeof(uint16_t));
+        if (received_panID != uwb_device->panID) {
+            return UWB_WRONG_ADDRESS;
+        }
+
+        // Validate destination address (bytes 5–6)
+        uint16_t dest_addr;
+        memcpy(&dest_addr, &rx_msg[5], sizeof(uint16_t));
+        if (dest_addr != uwb_device->address16 && dest_addr != 0x0000) {
+            return UWB_WRONG_ADDRESS;
+        }
+
+        // Extract sender address (bytes 7–8)
+        memcpy(sender_device_address, &rx_msg[7], sizeof(uint16_t));
+
+        // Extract payload (starting at byte 9, before 2-byte checksum)
+        uint32_t payload_size = frame_len - 9 - 2;
+        if (payload_size > max_data_size) {
+            return UWB_MEMORY_ERROR;
+        }
+
+        memcpy(data, &rx_msg[9], payload_size);
+        *received_size = payload_size;
+        return UWB_OK;
+    }
+
+    return UWB_TIMEOUT;
 }

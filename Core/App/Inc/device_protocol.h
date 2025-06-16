@@ -34,7 +34,8 @@ typedef enum {
 	UWB_NOT_CONFIGURED,      // Device or system not configured
     UWB_BUSY,                // Device or resource is busy
     UWB_COMM_ERROR,          // Communication failure
-    UWB_MEMORY_ERROR         // Memory allocation or access error
+    UWB_MEMORY_ERROR,        // Memory allocation or access error
+	UWB_WRONG_ADDRESS		 // Wrong address
 } uwb_result_e;
 
 // Enum to represent the type of UWB device
@@ -77,6 +78,7 @@ typedef struct {
 /*--------------------------- EXTERN -----------------------------------------*/
 /*--------------------------- GLOBAL FUNCTION PROTOTYPES ---------------------*/
 uwb_result_e uwb_device_init(uwb_device_t *uwb_device);
-uwb_result_e uwb_send_payload(uwb_device_t *uwb_device, uint16_t target_device_address, uint8_t* data, uint32_t data_size);
+uwb_result_e uwb_send_payload(const uwb_device_t *uwb_device, uint16_t target_device_address, const uint8_t* data, uint32_t data_size);
+uwb_result_e uwb_receive_poll(uwb_device_t *uwb_device, uint16_t *sender_device_address, uint8_t* data, uint32_t max_data_size, uint32_t* received_size);
 
 #endif /* APP_INC_DEVICE_PROTOCOL_H_ */

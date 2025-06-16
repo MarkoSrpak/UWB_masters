@@ -32,7 +32,7 @@ extern "C"
 //#define TEST_SIMPLE_RX
 //#define TEST_SIMPLE_RX_NLOS
 //#define TEST_RX_DIAG
-#define TEST_RX_SNIFF
+//#define TEST_RX_SNIFF
 //#define TEST_DOUBLE_BUFFER_RX
 //#define TEST_RX_TRIM
 //#define TEST_SIMPLE_RX_PDOA
