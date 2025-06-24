@@ -45,7 +45,7 @@ typedef enum {
 } device_type_e;
 
 // Struct to represent a 3D coordinate
-typedef struct {
+typedef struct __attribute__((packed)) {
     double x;  // X-coordinate
     double y;  // Y-coordinate
     double z;  // Z-coordinate
@@ -74,11 +74,33 @@ typedef struct {
     coord_t coord;                  // 3D spatial coordinates (x, y, z) of the device, typically used for anchors
 } uwb_device_t;
 
+typedef enum {
+    COMMAND_NOTHING = 0,            // No operation
+    COMMAND_RANGING_REQUEST,        // Start ranging exchange
+    COMMAND_RANGING_RESPONSE,       // Respond with timestamps and coordinates
+    COMMAND_POSITION_YOURSELF,      // Request device to position itself
+    COMMAND_POSITION_ANNOUNCEMENT   // Broadcast current position
+} uwb_command_e;
+
+typedef struct __attribute__((packed)){
+	uwb_command_e command_type;	// What msg is trying to do
+	uint64_t	  rx_ts;		// Ranging response will have receive timestamp
+	uint64_t 	  tx_ts;		// Ranging response will have transmit timestamp
+	coord_t		  coord;		// Ranging response and position announcement will have local coords
+	uwb_result_e  result; 		// If there was an error and results are not valid
+} uwb_msg_t;
+
+
+// 1. position yourself
+// 2. ranging request - rsp sadrži rx_ts, tx_ts i trenutne coord
+// 3. position anouncment
+
 
 /*--------------------------- EXTERN -----------------------------------------*/
 /*--------------------------- GLOBAL FUNCTION PROTOTYPES ---------------------*/
 uwb_result_e uwb_device_init(uwb_device_t *uwb_device);
-uwb_result_e uwb_send_payload(const uwb_device_t *uwb_device, uint16_t target_device_address, const uint8_t* data, uint32_t data_size);
+uwb_result_e uwb_send_msg(const uwb_device_t *uwb_device, uint16_t target_device_address, const uwb_msg_t* uwb_msg, uint8_t mode);
+uwb_result_e uwb_send_payload(const uwb_device_t *uwb_device, uint16_t target_device_address, const uint8_t* data, uint32_t data_size, uint8_t mode);
 uwb_result_e uwb_receive_poll(uwb_device_t *uwb_device, uint16_t *sender_device_address, uint8_t* data, uint32_t max_data_size, uint32_t* received_size);
 
 #endif /* APP_INC_DEVICE_PROTOCOL_H_ */

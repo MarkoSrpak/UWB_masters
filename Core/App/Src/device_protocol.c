@@ -77,7 +77,7 @@ static const uwb_device_t deviceTable[]={
 	{
 		.partID=0,
 		.lotID=0,
-		.deviceHash=0,
+		.deviceHash=0x1A0AB824,
 		.panID=0xABCD,
 		.address16=0x0003,
 		.device_id=3,
@@ -107,7 +107,7 @@ static const uwb_device_t deviceTable[]={
 	{
 		.partID=0,
 		.lotID=0,
-		.deviceHash=0x1A0AB824,
+		.deviceHash=0,
 		.panID=0xABCD,
 		.address16=0x0005,
 		.device_id=5,
@@ -225,7 +225,23 @@ uwb_result_e uwb_device_init(uwb_device_t *uwb_device)
 
 }
 
-uwb_result_e uwb_send_payload(const uwb_device_t *uwb_device, uint16_t target_device_address, const uint8_t* data, uint32_t data_size)
+uwb_result_e uwb_send_msg(const uwb_device_t *uwb_device, uint16_t target_device_address, const uwb_msg_t* uwb_msg, uint8_t mode)
+{
+    if (uwb_msg == NULL) {
+        return UWB_INVALID_PARAM;
+    }
+
+    // Send the message as raw bytes
+    return uwb_send_payload(
+        uwb_device,
+        target_device_address,
+        (const uint8_t*)uwb_msg,
+        sizeof(uwb_msg_t),
+        mode
+    );
+}
+
+uwb_result_e uwb_send_payload(const uwb_device_t *uwb_device, uint16_t target_device_address, const uint8_t* data, uint32_t data_size, uint8_t mode)
 {
     if (uwb_device == NULL || data == NULL || !uwb_device->is_initialized) {
         return UWB_INVALID_PARAM;
@@ -263,7 +279,14 @@ uwb_result_e uwb_send_payload(const uwb_device_t *uwb_device, uint16_t target_de
     dwt_writetxfctrl(total_size, 0, 1);     // Offset 0, ranging frame
 
     // Start transmission
-    dwt_starttx(DWT_START_TX_IMMEDIATE);
+    dwt_starttx(mode);
+#if 0
+    printf("TX RAW [%lu bytes]:", total_size);
+    for (uint16_t i = 0; i < total_size; i++) {
+        printf(" %02X", tx_msg[i]);
+    }
+    printf("\n\r");
+#endif
 
     return UWB_OK;
 }
