@@ -9,6 +9,7 @@
 #include "FreeRTOS.h"
 #include "task.h"
 #include <stdio.h>
+#include <math.h>
 
 #include "main_app.h"
 #include "position_protocol.h"
@@ -18,6 +19,8 @@
 /*--------------------------- STATIC FUNCTION PROTOTYPES ---------------------*/
 static void start_receive_loop();
 static void start_calibration();
+static void start_positioning();
+static double distance(coord_t p1, coord_t p2);
 /*--------------------------- VARIABLES --------------------------------------*/
 static uwb_device_t uwb_device = {0};
 static uint8_t rx_data[128];
@@ -28,6 +31,9 @@ static uwb_msg_t tx_msg;
 static uint64_t poll_rx_ts;
 static uint64_t resp_tx_ts;
 /*--------------------------- STATIC FUNCTIONS -------------------------------*/
+static double distance(coord_t p1, coord_t p2){
+	return sqrt((p1.x - p2.x)*(p1.x - p2.x) + (p1.y - p2.y)*(p1.y - p2.y) + (p1.z - p2.z)*(p1.z - p2.z));
+}
 static void start_receive_loop()
 {
 	while(1){
@@ -82,7 +88,22 @@ static void start_receive_loop()
 			}
 			else if(rx_msg.command_type == COMMAND_POSITION_ANNOUNCEMENT){
 				if(uwb_device.is_serial){
-					printf("%d: (%lf, %lf, %lf)\r\n", sender_address, rx_msg.coord.x, rx_msg.coord.y, rx_msg.coord.z);
+					if(sender_address == 2){
+						printf("Autocalibrated anchor 2 coords: (%lf, %lf, %lf), expected (%lf, %lf, %lf). ERR: %lf\r\n",
+								rx_msg.coord.x, rx_msg.coord.y, rx_msg.coord.z, anchor2.x, anchor2.y, anchor2.z,
+								distance(rx_msg.coord, anchor2));
+					}
+					else if(sender_address == 3){
+						printf("Autocalibrated anchor 3 coords: (%lf, %lf, %lf), expected (%lf, %lf, %lf). ERR: %lf\r\n",
+								rx_msg.coord.x, rx_msg.coord.y, rx_msg.coord.z, anchor3.x, anchor3.y, anchor3.z,
+								distance(rx_msg.coord, anchor3));
+					}
+					else if(sender_address == 4){
+						printf("Tag position Autocal (%lf, %lf, %lf), fixed anchors (%lf, %lf, %lf), ERR: %lf\r\n",
+								rx_msg.coord.x, rx_msg.coord.y, rx_msg.coord.z, rx_msg.coord2.x, rx_msg.coord2.y, rx_msg.coord2.z,
+								distance(rx_msg.coord, rx_msg.coord2));
+					}
+					//printf("%d: (%lf, %lf, %lf)\r\n", sender_address, rx_msg.coord.x, rx_msg.coord.y, rx_msg.coord.z);
 					return;
 				}
 			}
@@ -99,12 +120,28 @@ static void start_calibration()
 	tx_msg_position_yourself.coord = uwb_device.coord;
 	tx_msg_position_yourself.command_type = COMMAND_POSITION_YOURSELF;
 	tx_msg_position_yourself.result = UWB_OK;
-	while(1){
+	//while(1){
 		ASSERT_OK(uwb_send_msg(&uwb_device, 0x0002, &tx_msg_position_yourself, DWT_START_TX_IMMEDIATE | DWT_RESPONSE_EXPECTED));
 		start_receive_loop();
 		ASSERT_OK(uwb_send_msg(&uwb_device, 0x0003, &tx_msg_position_yourself, DWT_START_TX_IMMEDIATE | DWT_RESPONSE_EXPECTED));
 		start_receive_loop();
 		vTaskDelay(100);
+	//}
+}
+
+static void start_positioning()
+{
+	uwb_msg_t tx_msg_position_yourself;
+	tx_msg_position_yourself.rx_ts = 0;
+	tx_msg_position_yourself.tx_ts = 0;
+	// Write coords in final message
+	tx_msg_position_yourself.coord = uwb_device.coord;
+	tx_msg_position_yourself.command_type = COMMAND_POSITION_YOURSELF;
+	tx_msg_position_yourself.result = UWB_OK;
+	while(1){
+		ASSERT_OK(uwb_send_msg(&uwb_device, 0x0004, &tx_msg_position_yourself, DWT_START_TX_IMMEDIATE | DWT_RESPONSE_EXPECTED));
+		start_receive_loop();
+		vTaskDelay(5000);
 	}
 }
 /*--------------------------- GLOBAL FUNCTIONS -------------------------------*/
@@ -114,6 +151,7 @@ void main_app_task(void *parameters)
 
     if(uwb_device.device_type == ANCHOR && uwb_device.is_serial){
     	start_calibration();
+    	start_positioning();
     }
     else{
     	start_receive_loop();

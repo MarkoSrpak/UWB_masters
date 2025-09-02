@@ -24,6 +24,9 @@
 /*--------------------------- MACROS AND DEFINES -----------------------------*/
 /*--------------------------- TYPEDEFS AND STRUCTS ---------------------------*/
 /*--------------------------- EXTERN -----------------------------------------*/
+extern coord_t anchor1;
+extern coord_t anchor2;
+extern coord_t anchor3;
 /*--------------------------- GLOBAL FUNCTION PROTOTYPES ---------------------*/
 void range_with(uwb_device_t *uwb_device, uint16_t target_address, double *distance, coord_t *coord);
 void self_position_device_2(uwb_device_t *uwb_device);

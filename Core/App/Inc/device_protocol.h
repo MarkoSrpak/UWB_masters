@@ -72,6 +72,7 @@ typedef struct {
     uint16_t rx_ant_dly;            // Calibrated receive antenna delay, used for accurate timestamp calculations
 
     coord_t coord;                  // 3D spatial coordinates (x, y, z) of the device, typically used for anchors
+    coord_t coord_temp;
 } uwb_device_t;
 
 typedef enum {
@@ -87,6 +88,7 @@ typedef struct __attribute__((packed)){
 	uint64_t	  rx_ts;		// Ranging response will have receive timestamp
 	uint64_t 	  tx_ts;		// Ranging response will have transmit timestamp
 	coord_t		  coord;		// Ranging response and position announcement will have local coords
+	coord_t		  coord2;
 	uwb_result_e  result; 		// If there was an error and results are not valid
 } uwb_msg_t;
 

@@ -92,11 +92,11 @@ static const uwb_device_t deviceTable[]={
 	{
 		.partID=0,
 		.lotID=0,
-		.deviceHash=0,
+		.deviceHash=0x4BB919FB,
 		.panID=0xABCD,
 		.address16=0x0004,
 		.device_id=4,
-		.device_type=ANCHOR,
+		.device_type=TAG,
 		.is_serial=false,
 		.is_initialized=false,
 		.config={},
