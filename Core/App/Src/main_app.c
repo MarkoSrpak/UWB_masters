@@ -86,25 +86,44 @@ static void start_receive_loop()
 					self_position_device_5(&uwb_device);
 				}
 			}
-			else if(rx_msg.command_type == COMMAND_POSITION_ANNOUNCEMENT){
+			else if(rx_msg.command_type == COMMAND_POSITION_ANNOUNCEMENT
+					|| rx_msg.command_type == COMMAND_POSITION_ANNOUNCEMENT_GN
+					|| rx_msg.command_type == COMMAND_POSITION_ANNOUNCEMENT_PREDEF
+					|| rx_msg.command_type == COMMAND_POSITION_ANNOUNCEMENT_PREDEF_GN
+			){
 				if(uwb_device.is_serial){
 					if(sender_address == 2){
 						printf("Autocalibrated anchor 2 coords: (%lf, %lf, %lf), expected (%lf, %lf, %lf). ERR: %lf\r\n",
 								rx_msg.coord.x, rx_msg.coord.y, rx_msg.coord.z, anchor2.x, anchor2.y, anchor2.z,
 								distance(rx_msg.coord, anchor2));
+						return;
 					}
 					else if(sender_address == 3){
 						printf("Autocalibrated anchor 3 coords: (%lf, %lf, %lf), expected (%lf, %lf, %lf). ERR: %lf\r\n",
 								rx_msg.coord.x, rx_msg.coord.y, rx_msg.coord.z, anchor3.x, anchor3.y, anchor3.z,
 								distance(rx_msg.coord, anchor3));
+						return;
 					}
 					else if(sender_address == 4){
-						printf("Tag position Autocal (%lf, %lf, %lf), fixed anchors (%lf, %lf, %lf), ERR: %lf\r\n",
-								rx_msg.coord.x, rx_msg.coord.y, rx_msg.coord.z, rx_msg.coord2.x, rx_msg.coord2.y, rx_msg.coord2.z,
-								distance(rx_msg.coord, rx_msg.coord2));
+						printf("Autocalibrated anchor 4 coords: (%lf, %lf, %lf), expected (%lf, %lf, %lf). ERR: %lf\r\n",
+								rx_msg.coord.x, rx_msg.coord.y, rx_msg.coord.z, anchor4.x, anchor4.y, anchor4.z,
+								distance(rx_msg.coord, anchor4));
+						return;
 					}
-					//printf("%d: (%lf, %lf, %lf)\r\n", sender_address, rx_msg.coord.x, rx_msg.coord.y, rx_msg.coord.z);
-					return;
+					else if(sender_address == 4){
+						printf("Autocalibrated anchor 4 coords: (%lf, %lf, %lf), expected (%lf, %lf, %lf). ERR: %lf\r\n",
+								rx_msg.coord.x, rx_msg.coord.y, rx_msg.coord.z, anchor4.x, anchor4.y, anchor4.z,
+								distance(rx_msg.coord, anchor4));
+						return;
+					}
+					else if(sender_address == 5){
+						printf("Method %d, tag coords (%lf, %lf, %lf) \r\n",
+								rx_msg.command_type, rx_msg.coord.x, rx_msg.coord.y, rx_msg.coord.z);
+						if(rx_msg.command_type == COMMAND_POSITION_ANNOUNCEMENT_PREDEF_GN) // End condition za tag je trenutno ovo
+						{
+							return;
+						}
+					}
 				}
 			}
 		}
@@ -125,6 +144,8 @@ static void start_calibration()
 		start_receive_loop();
 		ASSERT_OK(uwb_send_msg(&uwb_device, 0x0003, &tx_msg_position_yourself, DWT_START_TX_IMMEDIATE | DWT_RESPONSE_EXPECTED));
 		start_receive_loop();
+		ASSERT_OK(uwb_send_msg(&uwb_device, 0x0004, &tx_msg_position_yourself, DWT_START_TX_IMMEDIATE | DWT_RESPONSE_EXPECTED));
+		start_receive_loop();
 		vTaskDelay(100);
 	//}
 }
@@ -138,10 +159,23 @@ static void start_positioning()
 	tx_msg_position_yourself.coord = uwb_device.coord;
 	tx_msg_position_yourself.command_type = COMMAND_POSITION_YOURSELF;
 	tx_msg_position_yourself.result = UWB_OK;
+	//uint32_t loop_counter = 0;
+	//uint32_t start_time = 0;
 	while(1){
-		ASSERT_OK(uwb_send_msg(&uwb_device, 0x0004, &tx_msg_position_yourself, DWT_START_TX_IMMEDIATE | DWT_RESPONSE_EXPECTED));
+		ASSERT_OK(uwb_send_msg(&uwb_device, 0x0005, &tx_msg_position_yourself, DWT_START_TX_IMMEDIATE | DWT_RESPONSE_EXPECTED));
 		start_receive_loop();
-		vTaskDelay(5000);
+		vTaskDelay(10000);
+
+		//loop_counter++;
+
+		// Print elapsed time every 10 loops
+		//if(loop_counter % 100 == 0){
+		//	uint32_t current_time = HAL_GetTick();
+		//	uint32_t elapsed_ms = current_time - start_time;
+		//	printf("Elapsed time for last 100 loops: %lu ms\r\n", elapsed_ms);
+		//	start_time = current_time; // reset timer
+		//}
+		//vTaskDelay(500);
 	}
 }
 /*--------------------------- GLOBAL FUNCTIONS -------------------------------*/
